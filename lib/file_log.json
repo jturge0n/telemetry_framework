@@ -1,4 +1,0 @@
-{"Timestamp":"2023-10-27 09:10:05 -0500","Username":"joshuadturgeon","Process Name":"create file","Process Command Line":"--create-file example.txt","Process ID":24846,"Activity":"Create","File Path":"example.txt"}
-{"Timestamp":"2023-10-27 09:11:19 -0500","Username":"joshuadturgeon","Process Name":"modify file","Process Command Line":"--modify-file example.txt,this file has been modified\n","Process ID":24977,"Activity":"Modify","File Path":"example.txt"}
-{"Timestamp":"2023-10-27 09:11:50 -0500","Username":"joshuadturgeon","Process Name":"delete file","Process Command Line":"--delete-file example.txt","Process ID":25051,"Activity":"Delete","File Path":"example.txt"}
-{"Timestamp":"2023-10-27 09:15:07 -0500","Username":"joshuadturgeon","Process Name":"create file","Process Command Line":"--create-file example.txt","Process ID":25357,"Activity":"Create","File Path":"example.txt"}
