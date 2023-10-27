@@ -1,5 +1,7 @@
-require 'socket'
+require 'English'
 require 'json'
+require 'optparse'
+require 'socket'
 
 module TelemetryMonitor
   CONSTANTS = {
@@ -191,5 +193,62 @@ module TelemetryMonitor
     }
 
     basic_data.merge(network_data)
+  end
+
+  def self.main
+    options = {}
+
+    OptionParser.new do |opts|
+      opts.on("--start-process COMMAND,EXECUTABLE_PATH", Array, "Start a process/shell command (i.e. ls -l)") do |args|
+        options[:start_process] = args
+      end
+
+      opts.on("--create-file FILE_PATH", String, "Create a file at the specified location") do |file_path|
+        options[:create_file] = file_path
+      end
+
+      opts.on("--modify-file FILE_PATH,NEW_CONTENT", Array, "Modify a file at the specified location") do |args|
+        options[:modify_file] = args
+      end
+
+      opts.on("--delete-file FILE_PATH", String, "Delete a file at the specified location") do |file_path|
+        options[:delete_file] = file_path
+      end
+
+      opts.on("--establish-network-connection DESTINATION,PORT,DATA", Array, "Start a connection and transmit data") do |args|
+        options[:establish_network_connection] = args
+      end
+    end.parse!
+
+    if options.key?(:start_process)
+      command, executable_path = options[:start_process]
+      start_process(executable_path, command)
+    end
+
+    if options.key?(:create_file)
+      create_file(options[:create_file])
+    end
+
+    if options.key?(:modify_file)
+      file_path, new_content = options[:modify_file]
+      modify_file(file_path, new_content)
+    end
+
+    if options.key?(:delete_file)
+      delete_file(options[:delete_file])
+    end
+
+    if options.key?(:establish_network_connection)
+      destination, port, data = options[:establish_network_connection]
+      establish_network_connection(destination, port, data)
+    end
+
+    if options.empty?
+      puts options
+    end
+  end
+
+  if $PROGRAM_NAME == __FILE__
+    main
   end
 end
