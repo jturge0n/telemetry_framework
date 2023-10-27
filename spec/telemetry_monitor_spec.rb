@@ -151,6 +151,31 @@ RSpec.describe TelemetryMonitor do
       end
     end
 
+    describe '.establish_network_connection' do
+      it 'establishes a network connection and logs the activity' do
+        destination = 'example.com'
+        port = 80
+        data = 'Hello, World!'
+
+        # Mock the TCPSocket class
+        socket = double(TCPSocket)
+        allow(TCPSocket).to receive(:open).and_return(socket)
+        allow(socket).to receive(:addr).and_return(12345)
+
+        # Set expectations on the mock socket
+        expect(socket).to receive(:puts).with(data)
+        expect(socket).to receive(:close)
+
+        # Ensure that the activity was logged with correct params
+        expect(TelemetryMonitor).to receive(:log_activity) do |data, log_path|
+          expect(data).to be_a(Hash)
+          expect(log_path).to be_a(String)
+        end
+
+        TelemetryMonitor.establish_network_connection(destination, port, data)
+      end
+    end
+
     context 'when data comes from file crud methods' do
       it 'logs the activity with the expected content' do
         timestamp = Time.now
@@ -181,6 +206,54 @@ RSpec.describe TelemetryMonitor do
           hash_including(
             'Activity' => activity,
             'File Path' => file_path,
+            'Username' => username,
+            'Process ID' => process_id,
+            'Process Name' => process_name,
+            'Process Command Line' => process_command_line
+          )
+        )
+      end
+    end
+
+    context 'when data comes from establish_network_connection' do
+      it 'logs the activity with the expected content' do
+        timestamp = Time.now
+        username = 'testuser'
+        process_name = 'TestProcess'
+        process_command_line = 'test_command'
+        process_id = 123
+        source_address = "localhost"
+        source_port = 12345
+        full_source = "#{source_address}:#{source_port}"
+        protocol = "TCP"
+        destination = 'example.com'
+        port = 80
+        full_destination = "#{destination}:#{port}"
+        data = 'Hello, World!'
+
+        log_data = {
+          timestamp: timestamp,
+          username: username,
+          process_name: process_name,
+          process_command_line: process_command_line,
+          process_id: process_id,
+          destination: full_destination,
+          source: full_source,
+          data_size: data.length,
+          protocol: protocol,
+        }
+
+        TelemetryMonitor.log_activity(log_data, @log_file)
+
+        # Read the log file line by line and parse each line as JSON
+        log_entries = File.readlines(@log_file).map { |line| JSON.parse(line) }
+
+        # Assert that the JSON log entries contain relevant information
+        expect(log_entries).to include(
+          hash_including(
+            'Destination' => full_destination,
+            'Data Size' => data.length,
+            'Protocol' => protocol,
             'Username' => username,
             'Process ID' => process_id,
             'Process Name' => process_name,

@@ -1,3 +1,6 @@
+require 'socket'
+require 'json'
+
 module TelemetryMonitor
   CONSTANTS = {
     timestamp: "Timestamp",
@@ -103,8 +106,37 @@ module TelemetryMonitor
     log_activity(log_data, log_path)
   end
 
-  def establish_network_connection(destination, port, data)
+  # Establish a Network Connection and Transmit Data
+  def self.establish_network_connection(destination, port, data)
+    log_path = 'network_log.json'
+    source_address = "localhost"
+    source_port = 12345
+    protocol = "TCP"
+    process_name = "network connection"
+    process_id = Process.pid
+    process_command_line = "--establish-network-connection #{destination},#{port},#{data}"
 
+    socket = TCPSocket.open(destination, port)
+    socket.puts(data)
+
+    source = "#{source_address}:#{source_port}"
+
+    options = {
+      source: source,
+      destination: "#{destination}:#{port}",
+      data_size: data.length,
+      protocol: protocol,
+      process_name: process_name,
+      process_id: process_id,
+      process_command_line: process_command_line
+    }
+
+    log_data = aggregate_network_data(options)
+
+    # Log the network activity
+    log_activity(log_data, log_path)
+
+    socket.close
   end
 
   # Log the data from activity to specified log file
@@ -145,5 +177,19 @@ module TelemetryMonitor
     }
 
     basic_data.merge(file_data)
+  end
+
+  # Generate and compile data specific to network connection
+  def self.aggregate_network_data(options)
+    basic_data = aggregate_basic_data(options)
+
+    network_data = {
+      destination: options[:destination],
+      source: options[:source],
+      data_size: options[:data_size],
+      protocol: options[:protocol]
+    }
+
+    basic_data.merge(network_data)
   end
 end
