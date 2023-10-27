@@ -1,4 +1,18 @@
 module TelemetryMonitor
+  CONSTANTS = {
+    timestamp: "Timestamp",
+    username: "Username",
+    process_name: "Process Name",
+    process_command_line: "Process Command Line",
+    process_id: "Process ID",
+    activity: "Activity",
+    file_path: "File Path",
+    destination: "Destination",
+    source: "Source",
+    data_size: "Data Size",
+    protocol: "Protocol"
+  }
+
   def self.start_process(executable_path, command = "")
     log_path = 'process_log.json'
     process_name = File.basename(executable_path)
