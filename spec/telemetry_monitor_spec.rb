@@ -43,4 +43,68 @@ RSpec.describe TelemetryMonitor do
       expect(updated_num_text_edit_processes).to eq(num_text_edit_processes + 1)
     end
   end
+
+  describe '.create_file' do
+    before(:each) do
+      @test_file = 'test_file.txt'
+    end
+
+    after(:each) do
+      File.delete(@test_file) if File.exist?(@test_file)
+    end
+
+    it 'creates a file and logs the activity' do
+      # Ensure that the activity was logged with correct params
+      expect(TelemetryMonitor).to receive(:log_activity) do |data, log_path|
+        expect(data).to be_a(Hash)
+        expect(log_path).to be_a(String)
+      end
+
+      expect {
+        TelemetryMonitor.create_file(@test_file)
+      }.to change { File.exist?(@test_file) }.from(false).to(true)
+    end
+  end
+
+  describe '.modify_file' do
+    before(:each) do
+      @test_file = 'test_file.txt'
+      File.write(@test_file, 'Initial content for the file')
+    end
+
+    after(:each) do
+      File.delete(@test_file) if File.exist?(@test_file)
+    end
+
+    it 'modifies a file and logs the activity' do
+      # Ensure that the activity was logged with correct params
+      expect(TelemetryMonitor).to receive(:log_activity) do |data, log_path|
+        expect(data).to be_a(Hash)
+        expect(log_path).to be_a(String)
+      end
+
+      expect {
+        TelemetryMonitor.modify_file(@test_file, 'Modified content for the file')
+      }.to change { File.read(@test_file) }.from('Initial content for the file').to('Modified content for the file')
+    end
+  end
+
+  describe '.delete_file' do
+    before(:each) do
+      @test_file = 'test_file.txt'
+      File.write(@test_file, 'Sample content for the file')
+    end
+
+    it 'deletes a file and logs the activity' do
+      # Ensure that the activity was logged with correct params
+      expect(TelemetryMonitor).to receive(:log_activity) do |data, log_path|
+        expect(data).to be_a(Hash)
+        expect(log_path).to be_a(String)
+      end
+
+      expect {
+        TelemetryMonitor.delete_file(@test_file)
+      }.to change { File.exist?(@test_file) }.from(true).to(false)
+    end
+  end
 end
