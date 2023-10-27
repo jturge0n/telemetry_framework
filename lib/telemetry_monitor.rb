@@ -18,27 +18,35 @@ module TelemetryMonitor
     protocol: "Protocol"
   }
 
-  def self.start_process(executable_path, command = "")
-    log_path = 'process_log.json'
-    process_name = File.basename(executable_path)
-    process_command_line = "#{executable_path} #{command}"
-    process_id = Process.spawn("#{command} #{executable_path}")
+  # Start a process
+  def self.start_process(command, executable_path)
+    log_path = default_log_path('process_log.json')
+    command = add_os_extension(command)
+    process_name = File.basename(command)
+    process_command_line = "#{command} #{executable_path}"
 
-    options = {
-      process_name: process_name,
-      process_id: process_id,
-      process_command_line: process_command_line
-    }
+    begin
+      process_id = Process.spawn("#{command} #{executable_path}")
 
-    # generate and organize the data to be logged
-    data = aggregate_basic_data(options)
+      options = {
+        process_name: process_name,
+        process_id: process_id,
+        process_command_line: process_command_line
+      }
 
-    log_activity(data, log_path)
+      # generate and organize the data to be logged
+      data = aggregate_basic_data(options)
+
+      log_activity(data, log_path)
+    rescue StandardError => e
+      puts "Error starting process: #{e.message}"
+    end
   end
+
 
   # Create a new file at specified path
   def self.create_file(file_path)
-    log_path = 'file_log.json'
+    log_path = default_log_path('file_log.json')
     process_name = "create file"
     process_id = Process.pid
     process_command_line = "--create-file #{file_path}"
@@ -54,15 +62,19 @@ module TelemetryMonitor
     # generate and organize the data to be logged
     log_data = aggregate_file_data(options)
 
-    # Instantiate new file
-    File.write(file_path, "This is a sample content for the file")
+    begin
+      # Instantiate new file
+      File.write(File.join(file_path), "This is a sample content for the file")
 
-    log_activity(log_data, log_path)
+      log_activity(log_data, log_path)
+    rescue StandardError => e
+      puts "Error creating file: #{e.message}"
+    end
   end
 
   # Modifying a File
   def self.modify_file(file_path, new_content)
-    log_path = 'file_log.json'
+    log_path = default_log_path('file_log.json')
     process_name = "modify file"
     process_id = Process.pid
     process_command_line = "--modify-file #{file_path},#{new_content}"
@@ -78,15 +90,19 @@ module TelemetryMonitor
     # generate and organize the data to be logged
     log_data = aggregate_file_data(options)
 
-    # Overwrite the file with new content
-    File.write(file_path, new_content)
+    begin
+      # Overwrite the file with new content
+      File.write(File.join(file_path), new_content)
 
-    log_activity(log_data, log_path)
+      log_activity(log_data, log_path)
+    rescue StandardError => e
+      puts "Error modifying file: #{e.message}"
+    end
   end
 
   # Delete a specified file
   def self.delete_file(file_path)
-    log_path = 'file_log.json'
+    log_path = default_log_path('file_log.json')
     process_name = "delete file"
     process_id = Process.pid
     process_command_line = "--delete-file #{file_path}"
@@ -102,43 +118,50 @@ module TelemetryMonitor
     # generate and organize the data to be logged
     log_data = aggregate_file_data(options)
 
-    # Delete the file
-    File.delete(file_path)
+    begin
+      # Delete the file
+      File.delete(File.join(file_path))
 
-    log_activity(log_data, log_path)
+      log_activity(log_data, log_path)
+    rescue StandardError => e
+      puts "Error deleting file: #{e.message}"
+    end
   end
 
   # Establish a Network Connection and Transmit Data
   def self.establish_network_connection(destination, port, data)
-    log_path = 'network_log.json'
+    log_path = default_log_path('network_log.json')
     source_address = "localhost"
-    source_port = 12345
     protocol = "TCP"
     process_name = "network connection"
     process_id = Process.pid
     process_command_line = "--establish-network-connection #{destination},#{port},#{data}"
 
-    socket = TCPSocket.open(destination, port)
-    socket.puts(data)
+    begin
+      socket = TCPSocket.open(destination, port)
+      socket.puts(data)
 
-    source = "#{source_address}:#{source_port}"
+      source = Socket.gethostbyname(Socket.gethostname).first + ":" + socket.addr[1].to_s
 
-    options = {
-      source: source,
-      destination: "#{destination}:#{port}",
-      data_size: data.length,
-      protocol: protocol,
-      process_name: process_name,
-      process_id: process_id,
-      process_command_line: process_command_line
-    }
+      options = {
+        source: source,
+        destination: "#{destination}:#{port}",
+        data_size: data.length,
+        protocol: protocol,
+        process_name: process_name,
+        process_id: process_id,
+        process_command_line: process_command_line
+      }
 
-    log_data = aggregate_network_data(options)
+      log_data = aggregate_network_data(options)
 
-    # Log the network activity
-    log_activity(log_data, log_path)
+      # Log the network activity
+      log_activity(log_data, log_path)
 
-    socket.close
+      socket.close
+    rescue StandardError => e
+      puts "Error: #{e.message}"
+    end
   end
 
   # Log the data from activity to specified log file
@@ -150,7 +173,8 @@ module TelemetryMonitor
       activity_log.merge!({CONSTANTS[key] => value})
     end
 
-    File.open(log_path, 'a') do |file|
+    # Append the file in binary mode to handle line endings consistently across different OS
+    File.open(log_path, 'a:binary') do |file|
       file.puts(activity_log.to_json)
     end
   end
@@ -195,6 +219,38 @@ module TelemetryMonitor
     basic_data.merge(network_data)
   end
 
+  def self.default_log_path(log_filename)
+    home_directory = ENV['HOME'] || ENV['USERPROFILE'] || Dir.home
+
+    File.join(home_directory,'rails_projects/telemetry_framework/logs', log_filename)
+  end
+
+  # Add the appropriate executable file extension based on the platform
+  def self.add_os_extension(command)
+    # Check if the command has an extension
+    unless File.extname(command).empty?
+      return command
+    end
+
+    # Platform-specific executable extensions
+    windows_extension = '.exe'
+    unix_extension = '' # No extension needed on Unix-based systems
+
+    # Determine the appropriate extension based on the platform
+    extension =
+      case RbConfig::CONFIG['host_os']
+      when /mswin|msys|mingw|cygwin|bccwin|wince|emc/
+        windows_extension
+      when /darwin|mac os/
+        unix_extension
+      else
+        unix_extension
+      end
+
+    # Append the appropriate extension
+    command + extension
+  end
+
   def self.main
     options = {}
 
@@ -222,7 +278,7 @@ module TelemetryMonitor
 
     if options.key?(:start_process)
       command, executable_path = options[:start_process]
-      start_process(executable_path, command)
+      start_process(command, executable_path)
     end
 
     if options.key?(:create_file)

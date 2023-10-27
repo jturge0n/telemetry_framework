@@ -31,7 +31,7 @@ RSpec.describe TelemetryMonitor do
       num_text_edit_processes = text_edit_processes.split("\n").length
 
       # Start the process
-      TelemetryMonitor.start_process(executable_path, command)
+      TelemetryMonitor.start_process(command, executable_path)
 
       # Sleep briefly to allow the process to start
       sleep(2)
@@ -108,6 +108,31 @@ RSpec.describe TelemetryMonitor do
     end
   end
 
+  describe '.establish_network_connection' do
+    it 'establishes a network connection and logs the activity' do
+      destination = 'example.com'
+      port = 80
+      data = 'Hello, World!'
+
+      # Mock the TCPSocket class
+      socket = double(TCPSocket)
+      allow(TCPSocket).to receive(:open).and_return(socket)
+      allow(socket).to receive(:addr).and_return(12345)
+
+      # Set expectations on the mock socket
+      expect(socket).to receive(:puts).with(data)
+      expect(socket).to receive(:close)
+
+      # Ensure that the activity was logged with correct params
+      expect(TelemetryMonitor).to receive(:log_activity) do |data, log_path|
+        expect(data).to be_a(Hash)
+        expect(log_path).to be_a(String)
+      end
+
+      TelemetryMonitor.establish_network_connection(destination, port, data)
+    end
+  end
+
   describe '.log_activity' do
     before(:each) do
       @log_file = 'activity_log.txt'
@@ -148,31 +173,6 @@ RSpec.describe TelemetryMonitor do
             'Process Command Line' => process_command_line
           )
         )
-      end
-    end
-
-    describe '.establish_network_connection' do
-      it 'establishes a network connection and logs the activity' do
-        destination = 'example.com'
-        port = 80
-        data = 'Hello, World!'
-
-        # Mock the TCPSocket class
-        socket = double(TCPSocket)
-        allow(TCPSocket).to receive(:open).and_return(socket)
-        allow(socket).to receive(:addr).and_return(12345)
-
-        # Set expectations on the mock socket
-        expect(socket).to receive(:puts).with(data)
-        expect(socket).to receive(:close)
-
-        # Ensure that the activity was logged with correct params
-        expect(TelemetryMonitor).to receive(:log_activity) do |data, log_path|
-          expect(data).to be_a(Hash)
-          expect(log_path).to be_a(String)
-        end
-
-        TelemetryMonitor.establish_network_connection(destination, port, data)
       end
     end
 
