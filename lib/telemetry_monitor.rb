@@ -1,19 +1,21 @@
-def start_process(executable_path, command = "")
+module TelemetryMonitor
+  def start_process(executable_path, command = "")
 
-end
+  end
 
-def create_file(file_path)
+  def create_file(file_path)
 
-end
+  end
 
-def modify_file(file_path, new_content)
+  def modify_file(file_path, new_content)
 
-end
+  end
 
-def delete_file(file_path)
+  def delete_file(file_path)
 
-end
+  end
 
-def establish_network_connection(destination, port, data)
+  def establish_network_connection(destination, port, data)
 
+  end
 end
