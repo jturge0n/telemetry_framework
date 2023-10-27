@@ -107,4 +107,87 @@ RSpec.describe TelemetryMonitor do
       }.to change { File.exist?(@test_file) }.from(true).to(false)
     end
   end
+
+  describe '.log_activity' do
+    before(:each) do
+      @log_file = 'activity_log.txt'
+      File.write(@log_file, '')  # Create an empty log file
+    end
+
+    after(:each) do
+      File.delete(@log_file) if File.exist?(@log_file)
+    end
+
+    context 'when data comes from start_process' do
+      it 'logs the activity' do
+        timestamp = Time.now
+        username = 'testuser'
+        process_name = 'TestProcess'
+        process_command_line = 'test_command'
+        process_id = 123
+
+        log_data = {
+          timestamp: timestamp,
+          username: username,
+          process_name: process_name,
+          process_command_line: process_command_line,
+          process_id: process_id
+        }
+
+        TelemetryMonitor.log_activity(log_data, @log_file)
+
+        # Read the log file line by line and parse each line as JSON
+        log_entries = File.readlines(@log_file).map { |line| JSON.parse(line) }
+
+        # Assert that the JSON log entries contain relevant information
+        expect(log_entries).to include(
+          hash_including(
+            'Username' => username,
+            'Process ID' => process_id,
+            'Process Name' => process_name,
+            'Process Command Line' => process_command_line
+          )
+        )
+      end
+    end
+
+    context 'when data comes from file crud methods' do
+      it 'logs the activity with the expected content' do
+        timestamp = Time.now
+        username = 'testuser'
+        process_name = 'TestProcess'
+        process_command_line = 'test_command'
+        process_id = 123
+        activity = 'Create'
+        file_path = '/Users/joshuadturgeon/rails_projects/red-canary-activity/activity_log.txt'
+
+        log_data = {
+          timestamp: timestamp,
+          username: username,
+          process_name: process_name,
+          process_command_line: process_command_line,
+          process_id: process_id,
+          activity: activity,
+          file_path: file_path
+        }
+
+        TelemetryMonitor.log_activity(log_data, @log_file)
+
+        # Read the log file line by line and parse each line as JSON
+        log_entries = File.readlines(@log_file).map { |line| JSON.parse(line) }
+
+        # Assert that the JSON log entries contain relevant information
+        expect(log_entries).to include(
+          hash_including(
+            'Activity' => activity,
+            'File Path' => file_path,
+            'Username' => username,
+            'Process ID' => process_id,
+            'Process Name' => process_name,
+            'Process Command Line' => process_command_line
+          )
+        )
+      end
+    end
+  end
 end
