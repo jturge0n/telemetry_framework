@@ -1,0 +1,1 @@
+{"Timestamp":"2023-10-27 09:13:46 -0500","Username":"joshuadturgeon","Process Name":"network connection","Process Command Line":"--establish-network-connection example.com,80,hello world","Process ID":25207,"Destination":"example.com:80","Source":"localhost:12345","Data Size":11,"Protocol":"TCP"}
